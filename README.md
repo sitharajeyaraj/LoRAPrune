@@ -30,7 +30,7 @@ This repository contains code for reproducing LoRAPrune. LoRAPrune can iterative
 
 ### Installation
 ```
-pip install -r requirement.txt
+pip install -r requirements.txt
 ```
 
 ### Prune LPMs
