@@ -58,6 +58,54 @@ class LoRAPruneTrainer(Trainer):
         self.prune_freq = prune_freq
         self.prune_metric = prune_metric
 
+    def save_model(self, output_dir=None, _internal_call=False):
+        """
+        Override Trainer.save_model to correctly save LoRA weights and
+        lora_masks instead of calling model.save_pretrained, which breaks
+        due to the custom LoraConfig from loraprune.lora being incompatible
+        with PEFT's saver. This override is called both by the Trainer during
+        mid-training checkpoint saves (checkpoint-N/) and at the end of
+        training in train.py via trainer.save_model(output_dir).
+        """
+        import json
+        from safetensors.torch import save_file
+
+        output_dir = output_dir or self.args.output_dir
+        os.makedirs(output_dir, exist_ok=True)
+    
+        # 1. Save lora_A and lora_B weights
+        lora_weights = {
+            k: v.data.cpu()
+            for k, v in self.model.named_parameters()
+            if 'lora_' in k
+        }
+        save_file(lora_weights, os.path.join(output_dir, "adapter_model.safetensors"))
+        logger.info(f"[LoRAPruneTrainer] Saved {len(lora_weights)} LoRA tensors to {output_dir}")
+
+        # 2. Save lora_masks (these are module attributes, not parameters,
+        #    so named_parameters() misses them — must collect separately)
+        masks = {}
+        for name, module in self.model.named_modules():
+            if hasattr(module, 'lora_mask'):
+                masks[name] = module.lora_mask.data.cpu()
+        torch.save(masks, os.path.join(output_dir, "lora_masks.pt"))
+        logger.info(f"[LoRAPruneTrainer] Saved {len(masks)} masks to {output_dir}")
+
+        # 3. Save adapter_config.json manually
+        adapter_config = {
+            "peft_type": "LORA",
+            "task_type": "CAUSAL_LM",
+            "r": self.model.peft_config['default'].r,
+            "lora_alpha": self.model.peft_config['default'].lora_alpha,
+            "lora_dropout": self.model.peft_config['default'].lora_dropout,
+            "target_modules": list(self.model.peft_config['default'].target_modules),
+            "bias": self.model.peft_config['default'].bias,
+        }
+        with open(os.path.join(output_dir, "adapter_config.json"), "w") as f:
+            json.dump(adapter_config, f, indent=2)
+
+        logger.info(f"[LoRAPruneTrainer] Saved adapter_config.json to {output_dir}")
+
     def _inner_training_loop(
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):

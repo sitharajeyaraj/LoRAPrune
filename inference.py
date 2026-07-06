@@ -62,28 +62,51 @@ def main(
     )
 
     model = get_peft_model(model, config)
+
     if lora_weights:
-        # Check the available weights and load them
-        checkpoint_name = os.path.join(
-            lora_weights, "pytorch_model.bin"
-        )  # Full checkpoint
-        if not os.path.exists(checkpoint_name):
-            checkpoint_name = os.path.join(
-                lora_weights, "adapter_model.bin"
-            )  # only LoRA model - LoRA config above has to fit
-            resume_from_checkpoint = (
-                False  # So the trainer won't try loading its state
-            )
-        # The two files above have a different name depending on how they were saved, but are actually the same.
-        if os.path.exists(checkpoint_name):
-            print(f"Restarting from {checkpoint_name}")
-            adapters_weights = torch.load(checkpoint_name)
-            for name, param in adapters_weights.items():
-                if 'lora_mask' in name:
-                    adapters_weights[name] = param.reshape(-1)
-            model = set_peft_model_state_dict(model, adapters_weights)
+        # ── Step 1: Load LoRA weights ──
+        # Prefer .safetensors (saved by fixed trainer), fallback to legacy .bin
+        safetensors_path = os.path.join(lora_weights, "adapter_model.safetensors")
+        bin_path         = os.path.join(lora_weights, "adapter_model.bin")
+        pytorch_path     = os.path.join(lora_weights, "pytorch_model.bin")
+
+        if os.path.exists(safetensors_path):
+            print(f"Loading LoRA weights from {safetensors_path}")
+            from safetensors.torch import load_file
+            adapters_weights = load_file(safetensors_path)
+            set_peft_model_state_dict(model, adapters_weights)
+        elif os.path.exists(bin_path):
+            print(f"Loading LoRA weights from {bin_path}")
+            adapters_weights = torch.load(bin_path, map_location="cpu")
+            set_peft_model_state_dict(model, adapters_weights)
+        elif os.path.exists(pytorch_path):
+            print(f"Loading LoRA weights from {pytorch_path}")
+            adapters_weights = torch.load(pytorch_path, map_location="cpu")
+            set_peft_model_state_dict(model, adapters_weights)
         else:
-            print(f"Checkpoint {checkpoint_name} not found")
+            print(f"No LoRA weights found in {lora_weights} — running with unmodified LoRA init")
+
+        # ── Step 2: Load and reinject lora_masks ──
+        # Masks are saved separately in lora_masks.pt by the fixed trainer.
+        # They must be reinjected as module attributes before prune_from_checkpoint
+        # is called, otherwise prune_one_layer will raise AttributeError on lora_mask.
+        masks_path = os.path.join(lora_weights, "lora_masks.pt")
+        if os.path.exists(masks_path):
+            print(f"Loading masks from {masks_path}")
+            masks = torch.load(masks_path, map_location="cpu", weights_only=False)
+            reinjected = 0
+            for name, module in model.named_modules():
+                if name in masks:
+                    module.lora_mask = torch.nn.Parameter(
+                        masks[name].to(next(module.parameters()).device),
+                        requires_grad=False
+                    )
+                    reinjected += 1
+            print(f"Reinjected {reinjected} masks out of {len(masks)} saved")
+        else:
+            print(f"WARNING: No lora_masks.pt found in {lora_weights}")
+            print(f"prune_from_checkpoint will fail without masks — aborting")
+            sys.exit(1)
 
     model = model.to(device)
 
@@ -96,7 +119,6 @@ def main(
     model.config.eos_token_id = 2
 
     model.half()  # seems to fix bugs for some users.
-
 
     model.eval()
     # if torch.__version__ >= "2" and sys.platform != "win32":

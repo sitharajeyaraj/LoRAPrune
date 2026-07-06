@@ -112,11 +112,14 @@ def prune_one_layer(layer):
     prune_fp16_module(layer.self_attn.o_proj, layer.self_attn.q_proj.lora_mask, True)
     layer.self_attn.num_heads = int(layer.self_attn.q_proj.lora_mask.sum()) // 128
     layer.self_attn.hidden_size = int(layer.self_attn.q_proj.lora_mask.sum())
+    layer.self_attn.num_key_value_heads = layer.self_attn.k_proj.out_features // layer.self_attn.head_dim
+    layer.self_attn.num_key_value_groups = layer.self_attn.num_heads // layer.self_attn.num_key_value_heads
 
     ## mlp
     prune_fp16_module(layer.mlp.gate_proj, layer.mlp.gate_proj.lora_mask, False)
     prune_fp16_module(layer.mlp.up_proj, layer.mlp.up_proj.lora_mask, False)
     prune_fp16_module(layer.mlp.down_proj, layer.mlp.gate_proj.lora_mask, True)
+    layer.mlp.intermediate_size = layer.mlp.gate_proj.out_features
 
     ## reset mask
     del(layer.self_attn.q_proj.lora_mask)

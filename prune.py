@@ -25,7 +25,7 @@ def train(
     data_path: str = "",  # the required argument
     output_dir: str = "output_dir",
     # training hyperparams
-    nsamples: int = 25000,
+    nsamples: int = 20000,
     batch_size: int = 128,
     micro_batch_size: int = 4,
     num_epochs: int = 3,
@@ -181,6 +181,20 @@ def train(
         data = load_dataset("json", data_files=data_path)
     else:
         data = load_dataset(data_path)
+    # ----------------------------------------------------------
+    # Limit dataset to nsamples + val_set_size total samples.
+    # nsamples=20000 + val_set_size=2000 → 22000 rows selected.
+    # The train/val split happens below via train_test_split,
+    # which takes val_set_size rows for val and the rest for train.
+    # ----------------------------------------------------------
+    total = nsamples + val_set_size
+    if len(data["train"]) > total:
+        data["train"] = data["train"].select(range(total))
+        print(f"Limited dataset to {total} samples "
+              f"({nsamples} train + {val_set_size} val)")
+    else:
+        print(f"Dataset has {len(data['train'])} samples "
+              f"(less than requested {total}), using all.")
 
     freeze(model)
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
@@ -273,7 +287,13 @@ def train(
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
-    model.save_pretrained(output_dir)
+    # ── FIXED: replaced model.save_pretrained(output_dir) which was broken
+    # due to custom LoraConfig incompatibility with PEFT's saver. Now calls
+    # the overridden save_model in LoRAPruneTrainer which correctly saves:
+    #   - adapter_model.safetensors  (lora_A, lora_B weights)
+    #   - lora_masks.pt              (pruning masks)
+    #   - adapter_config.json        (LoRA hyperparameters)
+    trainer.save_model(output_dir)
 
     print(
         "\n If there's a warning about missing keys above, please disregard :)"
