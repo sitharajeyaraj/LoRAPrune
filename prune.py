@@ -9,6 +9,7 @@ from datasets import load_dataset
 from loraprune.trainer import LoRAPruneTrainer
 from loraprune.utils import freeze
 from loraprune.lora import LoraConfig
+import loraprune.utils as utils
 
 from peft import (
     prepare_model_for_kbit_training,
@@ -287,6 +288,10 @@ def train(
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
+    # One-shot pruning: compute final lora_mask values from the fully-trained
+    # sensitivity EMA (trainer.sensitivity_dict). save_model() below will pick
+    # up these masks when it walks named_modules() and writes lora_masks.pt.
+    utils.local_prune(model, trainer.sensitivity_dict, ratio, ratio)
     # ── FIXED: replaced model.save_pretrained(output_dir) which was broken
     # due to custom LoraConfig incompatibility with PEFT's saver. Now calls
     # the overridden save_model in LoRAPruneTrainer which correctly saves:
