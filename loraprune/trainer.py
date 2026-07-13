@@ -382,13 +382,6 @@ class LoRAPruneTrainer(Trainer):
                     # Optimizer step
                     if not self.deepspeed:
                         sensitivity_dict = utils.update_sensitivity_dict(model, sensitivity_dict, self.prune_metric)
-                    ratio = utils.schedule_sparsity_ratio(self.state.global_step, self.state.max_steps,
-                                                          self.warmup_iters,
-                                                          self.cooldown_iters, self.init_ratio, self.ratio)
-
-                    # ratio = 0.05
-                    if (self.state.global_step) % self.prune_freq == 0 and ratio > self.init_ratio and ratio < self.ratio:
-                        utils.local_prune(model, sensitivity_dict, ratio, self.ratio)
 
                     optimizer_was_run = True
                     if self.deepspeed:
@@ -459,5 +452,7 @@ class LoRAPruneTrainer(Trainer):
                     shutil.rmtree(checkpoint)
 
         self.control = self.callback_handler.on_train_end(args, self.state, self.control)
+
+        self.sensitivity_dict = sensitivity_dict
 
         return TrainOutput(self.state.global_step, train_loss, metrics)
