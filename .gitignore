@@ -51,3 +51,10 @@ coverage.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Training/eval outputs (LoRAPrune-specific)
+outputs_dir_samples_*/
+checkpoint-*/
+*.safetensors
+*.bin
+*.pt
