@@ -53,7 +53,7 @@ ehthumbs.db
 Thumbs.db
 
 # Training/eval outputs (LoRAPrune-specific)
-outputs_dir_samples_*/
+outputs_*samples_*/
 checkpoint-*/
 *.safetensors
 *.bin
