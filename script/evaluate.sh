@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=0 python inference.py \
     --base_model "huggyllama/llama-7b" \
-    --lora_weights 'outputs_dir' \
-    --cutoff_len 512 \
+    --lora_weights 'outputs_dir_samples_20000_ratio_0.1' \
+    --cutoff_len 2048 \
     --lora_r 8 \
     --lora_alpha 16 \
     --lora_dropout 0.0 \
