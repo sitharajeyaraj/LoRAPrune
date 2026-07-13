@@ -544,8 +544,6 @@ class Linear(nn.Linear, LoraLayer):
                 result += lora_output.to(result.dtype)
         else:
             result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
-        if hasattr(self, 'lora_mask'):
-            result *= self.lora_mask.reshape(1, 1, -1)
         return result
 
 
@@ -606,6 +604,4 @@ if is_bnb_available():
                 else:
                     output = self.lora_B(self.lora_A(self.lora_dropout(x))) * self.scaling
                     result += output
-            if hasattr(self, 'lora_mask'):
-                result *= self.lora_mask.reshape(1, 1, -1)
             return result
