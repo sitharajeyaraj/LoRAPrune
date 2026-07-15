@@ -1,0 +1,11 @@
+CUDA_VISIBLE_DEVICES=0 python retrain_pruned.py \
+    --pruned_dir 'outputs_oneshot_samples_20000_ratio_0.1_pruned' \
+    --data_path 'MBZUAI/LaMini-instruction' \
+    --output_dir 'outputs_oneshot_samples_20000_ratio_0.1_retrained' \
+    --nsamples 20000 \
+    --batch_size 128 \
+    --micro_batch_size 2 \
+    --num_epochs 2 \
+    --learning_rate 3e-4 \
+    --cutoff_len 256 \
+    --val_set_size 2000
