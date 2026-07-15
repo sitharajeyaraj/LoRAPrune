@@ -42,7 +42,7 @@ def main(
         base_model,
         load_in_8bit=False,
         torch_dtype=torch.float16,
-        device_map='auto',
+        device_map={"": 0},
     )
     config = LoraConfig(
         r=lora_r,
