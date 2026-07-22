@@ -181,20 +181,20 @@ def train(
         data = load_dataset("json", data_files=data_path)
     else:
         data = load_dataset(data_path)
+
     # ----------------------------------------------------------
-    # Limit dataset to nsamples + val_set_size total samples.
-    # nsamples=20000 + val_set_size=2000 → 22000 rows selected.
-    # The train/val split happens below via train_test_split,
-    # which takes val_set_size rows for val and the rest for train.
+    # Matches IRFT's finetune_reparam_g_h_lr.py convention exactly:
+    # shuffle the full dataset first (fixed seed), then select
+    # nsamples as the TOTAL pool (train + val combined), then split.
+    # nsamples=20000, val_set_size=1000 -> 19000 train + 1000 val.
     # ----------------------------------------------------------
-    total = nsamples + val_set_size
-    if len(data["train"]) > total:
-        data["train"] = data["train"].select(range(total))
-        print(f"Limited dataset to {total} samples "
-              f"({nsamples} train + {val_set_size} val)")
-    else:
-        print(f"Dataset has {len(data['train'])} samples "
-              f"(less than requested {total}), using all.")
+    dataset = data["train"].shuffle(seed=3407)
+    if nsamples > 0:
+        dataset = dataset.select(range(min(nsamples, len(dataset))))
+        print(f"Selected {len(dataset)} total samples "
+              f"({nsamples - val_set_size} train + {val_set_size} val), "
+              f"matching IRFT's shuffle-then-select convention")
+    data["train"] = dataset
 
     freeze(model)
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
@@ -222,17 +222,11 @@ def train(
     # utils.print_trainable_parameters(model)
 
     if val_set_size > 0:
-        train_val = data["train"].train_test_split(
-            test_size=val_set_size, shuffle=True, seed=42
-        )
-        train_data = (
-            train_val["train"].shuffle().map(generate_and_tokenize_prompt)
-        )
-        val_data = (
-            train_val["test"].shuffle().map(generate_and_tokenize_prompt)
-        )
+        train_val = data["train"].train_test_split(test_size=val_set_size, seed=3407)
+        train_data = train_val["train"].map(generate_and_tokenize_prompt)
+        val_data = train_val["test"].map(generate_and_tokenize_prompt)
     else:
-        train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
+        train_data = data["train"].map(generate_and_tokenize_prompt)
         val_data = None
 
     trainer = LoRAPruneTrainer(
