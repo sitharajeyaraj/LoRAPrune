@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=0 python prune.py \
     --base_model "huggyllama/llama-7b" \
     --data_path 'MBZUAI/LaMini-instruction' \
-    --output_dir 'outputs_dir_samples_20000_ratio_0.1_v2' \
+    --output_dir 'outputs_dir_samples_20000_ratio_0.2_v2' \
     --nsamples 20000 \
     --batch_size 128 \
     --micro_batch_size 2 \
@@ -15,6 +15,6 @@ CUDA_VISIBLE_DEVICES=0 python prune.py \
     --lora_target_modules '[q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj]' \
     --train_on_inputs \
     --group_by_length \
-    --ratio 0.1 \
+    --ratio 0.2 \
     --prune_metric 'lora' \
     --prune_freq 10 
