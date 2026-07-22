@@ -183,19 +183,19 @@ def train(
     else:
         data = load_dataset(data_path)
     # ----------------------------------------------------------
-    # Limit dataset to nsamples + val_set_size total samples.
-    # nsamples=20000 + val_set_size=2000 → 22000 rows selected.
-    # The train/val split happens below via train_test_split,
-    # which takes val_set_size rows for val and the rest for train.
+    # FIXED (matches IRFT / main convention): shuffle the full
+    # dataset first with a fixed seed, THEN treat nsamples as the
+    # TOTAL pool size (train+val combined), not train-only.
+    # e.g. nsamples=20000, val_set_size=1000 -> 19000 train + 1000 val.
     # ----------------------------------------------------------
-    total = nsamples + val_set_size
-    if len(data["train"]) > total:
-        data["train"] = data["train"].select(range(total))
-        print(f"Limited dataset to {total} samples "
-              f"({nsamples} train + {val_set_size} val)")
+    data["train"] = data["train"].shuffle(seed=3407)
+    if len(data["train"]) > nsamples:
+        data["train"] = data["train"].select(range(nsamples))
+        print(f"Limited dataset to {nsamples} samples "
+              f"({nsamples - val_set_size} train + {val_set_size} val)")
     else:
         print(f"Dataset has {len(data['train'])} samples "
-              f"(less than requested {total}), using all.")
+              f"(less than requested {nsamples}), using all.")
 
     freeze(model)
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
@@ -224,13 +224,13 @@ def train(
 
     if val_set_size > 0:
         train_val = data["train"].train_test_split(
-            test_size=val_set_size, shuffle=True, seed=42
+            test_size=val_set_size, shuffle=True, seed=3407
         )
         train_data = (
-            train_val["train"].shuffle().map(generate_and_tokenize_prompt)
+            train_val["train"].map(generate_and_tokenize_prompt)
         )
         val_data = (
-            train_val["test"].shuffle().map(generate_and_tokenize_prompt)
+            train_val["test"].map(generate_and_tokenize_prompt)
         )
     else:
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
