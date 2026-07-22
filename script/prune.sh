@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=0 python prune.py \
     --base_model "huggyllama/llama-7b" \
     --data_path 'MBZUAI/LaMini-instruction' \
-    --output_dir 'outputs_dir_samples_20000_ratio_0.1' \
+    --output_dir 'outputs_dir_samples_20000_ratio_0.1_v2' \
     --nsamples 20000 \
     --batch_size 128 \
     --micro_batch_size 2 \
