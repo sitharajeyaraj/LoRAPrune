@@ -1,0 +1,61 @@
+[Sun Nov  1 12:19:43 PM IST 2026] [r50] pruning finished OK
+[Sun Nov  1 12:19:43 PM IST 2026] [r50] perplexity
+[Sun Nov  1 12:19:45 PM IST 2026] [r20] pruning finished OK
+[Sun Nov  1 12:19:45 PM IST 2026] [r20] perplexity
+[Sun Nov  1 12:20:45 PM IST 2026] [r30] pruning finished OK
+[Sun Nov  1 12:20:45 PM IST 2026] [r30] perplexity
+wikitext2 ppl:nan  inference time:0.041888
+PTB ppl:nan  inference time:0.117215
+[Sun Nov  1 12:22:10 PM IST 2026] [r50] zero-shot
+wikitext2 ppl:nan  inference time:0.046759
+PTB ppl:nan  inference time:0.167097
+[Sun Nov  1 12:22:30 PM IST 2026] [r20] zero-shot
+wikitext2 ppl:nan  inference time:0.043775
+PTB ppl:nan  inference time:0.099263
+[Sun Nov  1 12:22:42 PM IST 2026] [r30] zero-shot
+[Sun Nov  1 12:32:25 PM IST 2026] [r30] 5-shot MMLU
+[Sun Nov  1 12:33:48 PM IST 2026] [r50] 5-shot MMLU
+[Sun Nov  1 12:39:09 PM IST 2026] [r20] 5-shot MMLU
+[Sun Nov  1 12:52:53 PM IST 2026] [r30] done
+[Sun Nov  1 12:56:58 PM IST 2026] [r50] done
+[Sun Nov  1 01:10:18 PM IST 2026] [r20] done
+# LoRAPrune on LLaMA-7B (huggyllama/llama-7b), 40k LaMini samples, cosine LR
+
+## Perplexity (2048-token segments) and 5-shot MMLU
+
+| Ratio | Params | WikiText2 ↓ | PTB ↓ | MMLU 5-shot ↑ | paper WikiText2 | paper PTB | paper MMLU |
+|---|---|---|---|---|---|---|---|
+| 0% (unpruned) | 6.76B | 5.68 | 29.63 | 35.19 | 5.69 | 8.93 | 37.1 |
+| 20% | 5.65B | – | – | 22.95 | 7.63 | 11.87 | 36.81 |
+| 30% | 5.09B | – | – | 22.95 | 8.79 | 13.33 | 33.6 |
+| 50% | 3.98B | – | – | 22.95 | 11.6 | 17.39 | 27.84 |
+
+## Zero-shot accuracy (%), metric = `acc`
+
+| Ratio | BoolQ | PIQA | HellaSwag | WinoGrande | ARC-e | ARC-c | OBQA | Avg (7) |
+|---|---|---|---|---|---|---|---|---|
+| 0% (unpruned) | 75.11 | 78.67 | 56.95 | 69.85 | 75.25 | 41.89 | 34.40 | 61.73 |
+| 20% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+| 30% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+| 50% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+
+## Zero-shot accuracy (%), metric = `acc_norm`
+
+| Ratio | BoolQ | PIQA | HellaSwag | WinoGrande | ARC-e | ARC-c | OBQA | Avg (7) |
+|---|---|---|---|---|---|---|---|---|
+| 0% (unpruned) | 75.11 | 79.16 | 76.20 | 69.85 | 72.73 | 44.62 | 44.60 | 66.04 |
+| 20% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+| 30% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+| 50% | 37.83 | 49.51 | 25.04 | 49.57 | 25.08 | 22.70 | 27.60 | 33.90 |
+
+## Paper (Table 2, LoRAPrune on LaMini)
+
+| Ratio | PIQA | HellaSwag | WinoGrande | ARC-e | ARC-c | OBQA |
+|---|---|---|---|---|---|---|
+| 0% (unpruned) | 78.35 | 72.99 | 67.01 | 67.45 | 41.38 | 42.4 |
+| 20% | 77.48 | 68.64 | 66.77 | 70.2 | 41.89 | 38.6 |
+| 30% | 77.48 | 66.68 | 62.75 | 69.61 | 41.21 | 36.2 |
+| 50% | 75.39 | 60.21 | 56.97 | 60.38 | 40.12 | 35.8 |
+
+Notes: `acc_norm` table falls back to `acc` for BoolQ and WinoGrande (no acc_norm). 'Params' counts all weights incl. embeddings; layers 0-2 and the last layer are never pruned (loraprune.utils.freeze), so a 50% ratio removes less than 50% of the total.
+[Sun Nov  1 01:10:18 PM IST 2026] === ALL DONE === see results/SUMMARY.md

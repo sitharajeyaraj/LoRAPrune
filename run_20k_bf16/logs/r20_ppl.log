@@ -1,0 +1,47 @@
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.63s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.03it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.07s/it]
+/home/sithara/LoRAPrune/inference.py:89: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  adapters_weights = torch.load(checkpoint_name)
+Using the latest cached version of the dataset since wikitext couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'wikitext-2-raw-v1' at /home/sithara/.cache/huggingface/datasets/wikitext/wikitext-2-raw-v1/0.0.0/b08601e04326c79dfdd32d625aee71d232d685c3 (last modified on Sat Oct 31 21:58:21 2026).
+Token indices sequence length is longer than the specified maximum sequence length for this model (341469 > 2048). Running this sequence through the model will result in indexing errors
+/home/sithara/LoRAPrune/inference.py:155: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast():
+Using the latest cached version of the module from /home/sithara/.cache/huggingface/modules/datasets_modules/datasets/ptb_text_only/8d1b97746fb9765d140e569ec5ddd35e20af4d37761f5e1bf357ea0b081f2c1f (last modified on Sat Oct 31 21:58:25 2026) since it couldn't be found locally at ptb_text_only
+Restarting from outputs_r20/adapter_model.bin
+Loaded 672 LoRA tensors from outputs_r20/adapter_model.bin
+pruning layer 0
+pruning layer 1
+pruning layer 2
+pruning layer 3
+pruning layer 4
+pruning layer 5
+pruning layer 6
+pruning layer 7
+pruning layer 8
+pruning layer 9
+pruning layer 10
+pruning layer 11
+pruning layer 12
+pruning layer 13
+pruning layer 14
+pruning layer 15
+pruning layer 16
+pruning layer 17
+pruning layer 18
+pruning layer 19
+pruning layer 20
+pruning layer 21
+pruning layer 22
+pruning layer 23
+pruning layer 24
+pruning layer 25
+pruning layer 26
+pruning layer 27
+pruning layer 28
+pruning layer 29
+pruning layer 30
+pruning layer 31
+8.504751437796486
+wikitext2 ppl:8.50  inference time:0.051002
+52.40407602298735
+PTB ppl:52.40  inference time:0.176088

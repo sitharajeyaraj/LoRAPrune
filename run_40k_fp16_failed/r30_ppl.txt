@@ -1,0 +1,2 @@
+wikitext2 ppl:nan  inference time:0.043775
+PTB ppl:nan  inference time:0.099263

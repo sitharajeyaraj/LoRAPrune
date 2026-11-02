@@ -1,0 +1,16 @@
+[Sun Nov  1 10:05:55 PM IST 2026] [ft_r50] fine-tuning finished OK
+[Sun Nov  1 10:06:43 PM IST 2026] [ft_r20] fine-tuning finished OK
+[Sun Nov  1 10:07:37 PM IST 2026] [ft_r30] fine-tuning finished OK
+[Sun Nov  1 10:18:40 PM IST 2026] [ft_r50_s50] ppl+zero-shot done: wikitext2 ppl:17.25  inference time:0.044574 PTB ppl:81.32  inference time:0.122834 
+[Sun Nov  1 10:19:05 PM IST 2026] [ft_r30_s50] ppl+zero-shot done: wikitext2 ppl:9.43  inference time:0.049154 PTB ppl:50.40  inference time:0.109855 
+[Sun Nov  1 10:23:43 PM IST 2026] [ft_r20_s50] ppl+zero-shot done: wikitext2 ppl:7.82  inference time:0.051149 PTB ppl:47.81  inference time:0.176148 
+[Sun Nov  1 10:30:50 PM IST 2026] [ft_r30_s100] ppl+zero-shot done: wikitext2 ppl:9.41  inference time:0.048959 PTB ppl:49.42  inference time:0.109289 
+[Sun Nov  1 10:31:55 PM IST 2026] [ft_r50_s100] ppl+zero-shot done: wikitext2 ppl:17.25  inference time:0.044341 PTB ppl:79.44  inference time:0.122094 
+[Sun Nov  1 10:40:46 PM IST 2026] [ft_r20_s100] ppl+zero-shot done: wikitext2 ppl:7.79  inference time:0.050755 PTB ppl:48.09  inference time:0.175166 
+[Sun Nov  1 10:41:54 PM IST 2026] [ft_r30_final] ppl+zero-shot done: wikitext2 ppl:9.40  inference time:0.048886 PTB ppl:49.91  inference time:0.109318 
+[Sun Nov  1 10:44:17 PM IST 2026] [ft_r50_final] ppl+zero-shot done: wikitext2 ppl:17.31  inference time:0.044447 PTB ppl:80.06  inference time:0.122170 
+[Sun Nov  1 10:57:47 PM IST 2026] [ft_r20_final] ppl+zero-shot done: wikitext2 ppl:7.77  inference time:0.050516 PTB ppl:48.37  inference time:0.174279 
+[Sun Nov  1 11:02:08 PM IST 2026] [ft_r30] done
+[Sun Nov  1 11:06:29 PM IST 2026] [ft_r50] done
+[Sun Nov  1 11:28:28 PM IST 2026] [ft_r20] done
+[Sun Nov  1 11:28:28 PM IST 2026] === ALL DONE ===

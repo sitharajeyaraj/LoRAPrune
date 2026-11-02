@@ -1,0 +1,2 @@
+wikitext2 ppl:17.25  inference time:0.044341
+PTB ppl:79.44  inference time:0.122094
