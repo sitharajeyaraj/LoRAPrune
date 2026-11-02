@@ -238,6 +238,7 @@ class LoRAPruneTrainer(Trainer):
             utils.unfreeze(model)
 
         sensitivity_dict = utils.init_sensitivity_dict(model)
+        grad_norm = None
         for epoch in range(epochs_trained, num_train_epochs):
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
                 train_dataloader.sampler.set_epoch(epoch)
@@ -345,7 +346,12 @@ class LoRAPruneTrainer(Trainer):
                     optimizer_was_run = True
                     if self.deepspeed:
                         pass  # called outside the loop
-                    self.optimizer.step()
+                    elif grad_norm is not None and not torch.isfinite(torch.as_tensor(grad_norm)):
+                        # skip steps with inf/nan gradients instead of corrupting the weights
+                        logger.warning(f"Non-finite grad norm at step {self.state.global_step}, skipping optimizer step")
+                        optimizer_was_run = False
+                    if optimizer_was_run and not self.deepspeed:
+                        self.optimizer.step()
 
                     if optimizer_was_run and not self.deepspeed:
                         self.lr_scheduler.step()
