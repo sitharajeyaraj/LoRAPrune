@@ -74,16 +74,32 @@ def main(
             resume_from_checkpoint = (
                 False  # So the trainer won't try loading its state
             )
-        # The two files above have a different name depending on how they were saved, but are actually the same.
+        if not os.path.exists(checkpoint_name):
+            # newer peft versions save in safetensors format by default
+            checkpoint_name = os.path.join(
+                lora_weights, "adapter_model.safetensors"
+            )
+        # The files above have a different name depending on how they were saved, but are actually the same.
         if os.path.exists(checkpoint_name):
             print(f"Restarting from {checkpoint_name}")
-            adapters_weights = torch.load(checkpoint_name)
+            if checkpoint_name.endswith(".safetensors"):
+                from safetensors.torch import load_file
+                adapters_weights = load_file(checkpoint_name)
+            else:
+                adapters_weights = torch.load(checkpoint_name)
             for name, param in adapters_weights.items():
                 if 'lora_mask' in name:
                     adapters_weights[name] = param.reshape(-1)
-            model = set_peft_model_state_dict(model, adapters_weights)
+            # load directly by parameter name (matches how prune.py saves them)
+            result = model.load_state_dict(adapters_weights, strict=False)
+            if result.unexpected_keys:
+                raise RuntimeError(f"Unexpected keys in checkpoint: {result.unexpected_keys[:5]}")
+            missing_lora = [k for k in result.missing_keys if "lora_" in k]
+            if missing_lora:
+                raise RuntimeError(f"LoRA weights missing from checkpoint: {missing_lora[:5]}")
+            print(f"Loaded {len(adapters_weights)} LoRA tensors from {checkpoint_name}")
         else:
-            print(f"Checkpoint {checkpoint_name} not found")
+            raise FileNotFoundError(f"No pruned weights found in {lora_weights}")
 
     model = model.to(device)
 

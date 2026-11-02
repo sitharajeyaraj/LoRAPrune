@@ -1,7 +1,8 @@
 CUDA_VISIBLE_DEVICES=0 python prune.py \
-    --base_model "meta-llama/Llama-3.1-8B-Instruct" \
+    --base_model "huggyllama/llama-7b" \
     --data_path 'MBZUAI/LaMini-instruction' \
     --output_dir 'outputs_dir' \
+    --nsamples 20000 \
     --batch_size 128 \
     --micro_batch_size 2 \
     --num_epochs 2 \
@@ -16,4 +17,4 @@ CUDA_VISIBLE_DEVICES=0 python prune.py \
     --group_by_length \
     --ratio 0.5 \
     --prune_metric 'lora' \
-    --prune_freq 10 \
+    --prune_freq 10

@@ -35,8 +35,7 @@ coverage.xml
 .env
 .env.local
 
-# Logs
-*.log
+# Logs (training/eval logs of the runs are kept on purpose)
 
 # Database files
 *.db
@@ -50,3 +49,13 @@ coverage.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# LoRAPrune: trained LoRA weights, pruning masks and trainer checkpoints (~85 MB each, ~4 GB total)
+*.bin
+*.safetensors
+*.pt
+checkpoint-*/
+step-*/
+outputs_*/
+wandb/
+*.bak

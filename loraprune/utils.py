@@ -112,6 +112,9 @@ def prune_one_layer(layer):
     prune_fp16_module(layer.self_attn.o_proj, layer.self_attn.q_proj.lora_mask, True)
     layer.self_attn.num_heads = int(layer.self_attn.q_proj.lora_mask.sum()) // 128
     layer.self_attn.hidden_size = int(layer.self_attn.q_proj.lora_mask.sum())
+    # newer transformers also read the key/value head count (MHA only: k/v heads are pruned like q)
+    layer.self_attn.num_key_value_heads = layer.self_attn.num_heads
+    layer.self_attn.num_key_value_groups = 1
 
     ## mlp
     prune_fp16_module(layer.mlp.gate_proj, layer.mlp.gate_proj.lora_mask, False)

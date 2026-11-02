@@ -30,6 +30,7 @@ def train(
     micro_batch_size: int = 4,
     num_epochs: int = 3,
     learning_rate: float = 3e-4,
+    lr_scheduler_type: str = "linear",  # paper uses cosine
     cutoff_len: int = 256,
     val_set_size: int = 2000,
     # pruning hyperparams
@@ -59,16 +60,22 @@ def train(
     wandb_watch: str = "",  # options: false | gradients | all
     wandb_log_model: str = "",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
+    # recovery fine-tuning after pruning
+    init_lora: str = "",  # adapter_model.bin of a pruned model: load LoRA + masks, masks stay fixed
+    data_offset: int = 0,  # skip this many shuffled samples (use data not seen during pruning)
+    lora_save_steps: int = 0,  # also save LoRA + masks every N steps to output_dir/step-N
 ):
     print(
         f"Pruning with params:\n"
         f"base_model: {base_model}\n"
         f"data_path: {data_path}\n"
         f"output_dir: {output_dir}\n"
+        f"nsamples: {nsamples}\n"
         f"batch_size: {batch_size}\n"
         f"micro_batch_size: {micro_batch_size}\n"
         f"num_epochs: {num_epochs}\n"
         f"learning_rate: {learning_rate}\n"
+        f"lr_scheduler_type: {lr_scheduler_type}\n"
         f"cutoff_len: {cutoff_len}\n"
         f"val_set_size: {val_set_size}\n"
         f"lora_r: {lora_r}\n"
@@ -82,7 +89,10 @@ def train(
         f"wandb_watch: {wandb_watch}\n"
         f"wandb_log_model: {wandb_log_model}\n"
         f"resume_from_checkpoint: {resume_from_checkpoint}\n"
-        f"prune_metric: {resume_from_checkpoint}\n"
+        f"prune_metric: {prune_metric}\n"
+        f"init_lora: {init_lora}\n"
+        f"data_offset: {data_offset}\n"
+        f"lora_save_steps: {lora_save_steps}\n"
     )
     assert (
         base_model
@@ -182,7 +192,24 @@ def train(
     else:
         data = load_dataset(data_path)
 
+    # randomly subsample nsamples training examples (plus the validation set); <= 0 uses all data
+    if nsamples > 0:
+        n = min(nsamples + val_set_size, len(data["train"]) - data_offset)
+        data["train"] = data["train"].shuffle(seed=42).select(range(data_offset, data_offset + n))
+        print(f"Using {n} samples ({n - val_set_size} train + {val_set_size} val), offset {data_offset}")
+
     freeze(model)
+    if init_lora:
+        # recovery fine-tuning: start from a pruned model and never change its masks
+        sd = torch.load(init_lora, map_location="cpu")
+        res = torch.nn.Module.load_state_dict(model, sd, strict=False)
+        assert not res.unexpected_keys, res.unexpected_keys[:5]
+        missing = [k for k in res.missing_keys if "lora_" in k]
+        assert not missing, missing[:5]
+        masks = [v for k, v in sd.items() if "lora_mask" in k]
+        print(f"Loaded {len(sd)} tensors from {init_lora}; "
+              f"{sum(int((m == 0).sum()) for m in masks)} masked channels in {len(masks)} masks")
+        init_ratio = ratio  # schedule never exceeds init_ratio -> local_prune is never called
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
 
     if resume_from_checkpoint:
@@ -221,6 +248,18 @@ def train(
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = None
 
+    def save_lora(out):
+        state = {k: v.detach().cpu().contiguous()
+                 for k, v in torch.nn.Module.state_dict(model).items() if "lora_" in k}
+        os.makedirs(out, exist_ok=True)
+        torch.save(state, os.path.join(out, "adapter_model.bin"))
+        return state
+
+    class SaveLoraCallback(transformers.TrainerCallback):
+        def on_step_end(self, args, state, control, **kwargs):
+            if lora_save_steps and state.global_step % lora_save_steps == 0:
+                save_lora(os.path.join(output_dir, f"step-{state.global_step}"))
+
     trainer = LoRAPruneTrainer(
         model=model,
         train_dataset=train_data,
@@ -232,7 +271,8 @@ def train(
             warmup_steps=0,
             num_train_epochs=num_epochs,
             learning_rate=learning_rate,
-            fp16=True,
+            lr_scheduler_type=lr_scheduler_type,
+            bf16=True,  # was fp16; the custom training loop has no GradScaler overflow handling
             logging_steps=10,
             optim="adamw_torch",
             evaluation_strategy="steps" if val_set_size > 0 else "no",
@@ -258,6 +298,7 @@ def train(
         prune_freq=prune_freq,
         prune_metric=prune_metric
     )
+    trainer.add_callback(SaveLoraCallback())
 
     model.config.use_cache = False
 
@@ -273,7 +314,11 @@ def train(
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
-    model.save_pretrained(output_dir)
+    # save LoRA weights + pruning masks directly; peft>=0.13 save_pretrained does not
+    # understand loraprune's config object and writes empty files instead
+    lora_state = save_lora(output_dir)
+    n_masks = sum("lora_mask" in k for k in lora_state)
+    print(f"Saved {len(lora_state)} LoRA tensors ({n_masks} pruning masks) to {output_dir}/adapter_model.bin")
 
     print(
         "\n If there's a warning about missing keys above, please disregard :)"
